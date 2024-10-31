@@ -46,10 +46,11 @@ public class Player : MonoBehaviour
         inputVec.x = Input.GetAxisRaw("Horizontal");
         inputVec.y = Input.GetAxisRaw("Vertical");
 
+        Debug.Log($" [ Update ] rigid.position: {rigid.position}, rigid.rotation: {rigid.rotation}");
+        
         // 위치 이동 패킷 전송 -> 서버로
         NetworkManager.instance.SendLocationUpdatePacket(rigid.position.x, rigid.position.y);
         
-        // ping 
         
     }
 
@@ -58,21 +59,11 @@ public class Player : MonoBehaviour
         if (!GameManager.instance.isLive) {
             return;
         }
-        // 힘을 준다.
-        // rigid.AddForce(inputVec);
-
-        // 속도 제어
-        // rigid.velocity = inputVec;
-
-        // 위치 이동
-        // Vector2 nextVec = inputVec * speed * Time.fixedDeltaTime;
-        // rigid.MovePosition(rigid.position + nextVec);
-        
-        // [ 아래부터 최신코드 ] ---------- 
         
         // * 24.10.30 수정 
         if (isTargetPositionSet)
         {
+            Debug.Log($" targetPosition =>>> {targetPosition}");
             // 서버로부터 받은 위치로 이동 
             rigid.MovePosition(targetPosition);
             isTargetPositionSet = false;

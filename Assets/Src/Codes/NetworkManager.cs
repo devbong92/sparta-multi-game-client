@@ -185,6 +185,9 @@ public class NetworkManager : MonoBehaviour
             y = y,
         };
 
+        
+        Debug.Log($" [ SendLocationUpdatePacket ] locationUpdatePayload x,y ::::  {x}, {y}");
+        
         SendPacket(locationUpdatePayload, (uint)Packets.HandlerIds.LocationUpdate);
     }
 
@@ -260,11 +263,17 @@ public class NetworkManager : MonoBehaviour
             //     GameManager.instance.GameStart();
             // }
 
+            Debug.Log($"   [ IFF SWITCH ]   =>>>> {response.handlerId} ");
             switch ((Packets.HandlerIds) response.handlerId)
             {
                 case Packets.HandlerIds.Init:
                 {
                     Handler.InitialHandler(Packets.ParsePayload<InitialResponse>(response.data));
+                    break;
+                }
+                case Packets.HandlerIds.LocationUpdate:
+                {
+                    Debug.Log($"   [ switch ]   =>>>> {response.data} ");
                     break;
                 }
             }
@@ -278,37 +287,6 @@ public class NetworkManager : MonoBehaviour
              //var specificData = Packets.Deserialize<SpecificDataType>(data);
             string jsonString = Encoding.UTF8.GetString(data);
             Debug.Log($"Processed SpecificDataType: {jsonString}");
-
-            // -- LocationUpdatePayload
-            //var locationData = Packets.Deserialize<InitLocationUpdatePayload>(data);
-            //Debug.Log($"locationData: {locationData}");
-
-            // {"userId":"f9e0fb5a-dbd3-407d-8c74-c1a2d19950eb","x":0,"y":0}
-            var array = jsonString.Split(',');
-            float x = 0;
-            float y = 0; 
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                Debug.Log($"array {i}: <{array[i]}>");
-                var tmp = array[i].Split(':');
-                if(tmp.Length > 1 && tmp[0].Equals("\"x\""))
-                {
-                    x = float.Parse(tmp[1]);
-                    Debug.Log($" x {i}: <{tmp[1]}>");
-                }
-                else if (tmp.Length > 1 && tmp[0].Equals("\"y\""))
-                {   
-                    y = float.Parse(tmp[1].Split('}')[0]);
-                    Debug.Log($" y {i}: <{tmp[1].Split('}')[0]}>");
-                }
-            }
-
-            GameManager.instance.player.inputVec.x = x;
-            GameManager.instance.player.inputVec.y = y;
-
-
-
         }
         catch (Exception e) {
             Debug.LogError($"Error processing response data: {e.Message}");
@@ -337,17 +315,21 @@ public class NetworkManager : MonoBehaviour
     async void HandlePingPacket(byte[] data) {
         try
         {
-            // header
+
+            // 헤더 생성
             byte[] header = CreatePacketHeader(data.Length, Packets.PacketType.Ping);
 
-            // packet 
+            // 패킷 생성
             byte[] packet = new byte[header.Length + data.Length];
+            Array.Copy(header, 0, packet, 0, header.Length);
+            Array.Copy(data, 0, packet, header.Length, data.Length);
 
             await Task.Delay(GameManager.instance.latency);
+        
+            // 패킷 전송
+            stream.Write(packet, 0, packet.Length);
             
-            // 전송
-            stream.Write(packet,0,packet.Length);
-
+            
         } catch (Exception e)
         {
             Debug.LogError($"Error HandlePingPacket: {e.Message}");
